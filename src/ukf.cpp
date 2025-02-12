@@ -5,10 +5,6 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-void NormalizeAngleOnComponent(VectorXd& vec, int index) {
-  while (vec(index)> M_PI) vec(index) -= 2. * M_PI;
-  while (vec(index)<-M_PI) vec(index) += 2. * M_PI;
-}
 
 /**
  * Initializes Unscented Kalman filter
@@ -83,17 +79,14 @@ UKF::UKF() {
 UKF::~UKF() {}
 
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-  /**
-   * TODO: Complete this function! Make sure you switch between lidar and radar
-   * measurements.
-   */
+  
   if(!is_initialized_){
 
     time_us_ = meas_package.timestamp_;
 
     x_.fill(0);
     // set initial p_x and p_y pred state equal to first measurement and rest states to zero
-    if(meas_package.sensor_type_ ==  MeasurementPackage::LASER){
+    if(meas_package.sensor_type_ ==  MeasurementPackage::LASER && use_laser_ == true){
 
       use_radar_ = false;
       x_(0) = meas_package.raw_measurements_(0); 
@@ -109,9 +102,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
     }
 
-    if(meas_package.sensor_type_ ==  MeasurementPackage::RADAR){
+    if(meas_package.sensor_type_ ==  MeasurementPackage::RADAR && use_radar_ == true){
 
-      use_laser_ = false;
       double rho     = meas_package.raw_measurements_(0); 
       double phi     = meas_package.raw_measurements_(1);
       double rho_dot = meas_package.raw_measurements_(2);
@@ -304,10 +296,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   for (int i = 0; i < (2 * n_aug_ + 1); ++i) {  
     // residual
     VectorXd z_diff = Zsig.col(i) - z_pred;
-
-    // angle normalization
-    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
 
     S = S + weights_(i) * z_diff * z_diff.transpose();
   }
